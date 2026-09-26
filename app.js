@@ -218,7 +218,11 @@ async function sendFromPhone() {
   const text = input.value.trim();
   if (!text || !pairingId) return;
   const type = /^https?:\/\//i.test(text) ? 'link' : 'text';
-  await supabase.from('items').insert({ pairing_id: pairingId, type, content: text, sender: 'phone' });
+  const { error } = await supabase.from('items').insert({ pairing_id: pairingId, type, content: text, sender: 'phone' });
+  if (error) {
+    console.error('Link Share: send failed', error);
+    return;
+  }
   input.value = '';
   showPlanBanner(pairingId);
 }

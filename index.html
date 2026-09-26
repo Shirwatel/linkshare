@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Link Share</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1020" />
+  <link rel="apple-touch-icon" href="icons/icon192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <span class="dot" id="statusDot"></span>
+      <h1>Link Share</h1>
+    </header>
+
+    <!-- Pairing entry (no code in URL / not yet paired) -->
+    <section id="pairView" class="view hidden">
+      <div class="glass-card">
+        <p class="lead">Enter the 6-digit code shown in the extension on your computer.</p>
+        <div class="code-input-row">
+          <input id="codeInput" inputmode="numeric" maxlength="6" placeholder="000000" />
+          <button id="connectBtn" class="primary-btn">Connect</button>
+        </div>
+        <p class="hint" id="pairError"></p>
+      </div>
+    </section>
+
+    <!-- Connecting state (arrived via QR link) -->
+    <section id="connectingView" class="view hidden">
+      <div class="glass-card center">
+        <p class="lead">Connecting to your computer&hellip;</p>
+      </div>
+    </section>
+
+    <!-- Install banner -->
+    <div id="installBanner" class="install-banner hidden">
+      <span>Add Link Share to your home screen for quick access.</span>
+      <button id="installBtn">Add</button>
+      <button id="dismissInstall" class="dismiss">&times;</button>
+    </div>
+
+    <!-- Feed -->
+    <section id="feedView" class="view hidden">
+      <ul id="feedList" class="feed-list"></ul>
+
+      <div class="composer">
+        <input id="pcTextInput" type="text" placeholder="Send a note to your computer&hellip;" />
+        <button id="pcSendBtn" class="icon-btn" aria-label="Send">&#8594;</button>
+      </div>
+      <button id="unpairBtn" class="link-btn">Disconnect this phone</button>
+    </section>
+  </div>
+
+  <script src="lib/supabase-bundle.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -42,8 +42,13 @@ async function connectWithCode(code, fromQr) {
     .eq('pairing_code', code)
     .maybeSingle();
 
-  if (error || !data) {
-    pairError.textContent = 'Invalid code. Double-check the extension and try again.';
+  if (error) {
+    pairError.textContent = `Couldn't reach the server: ${error.message || JSON.stringify(error)}`;
+    console.error('Link Share connect error:', error);
+    return showView(pairView);
+  }
+  if (!data) {
+    pairError.textContent = 'No pairing found for that code. Double-check the extension and try again.';
     return showView(pairView);
   }
   if (new Date(data.code_expires_at) < new Date()) {

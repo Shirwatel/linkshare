@@ -1,4 +1,4 @@
-const CACHE = 'linkshare-v1';
+const CACHE = 'linkshare-v2';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/config.js', '/lib/supabase-bundle.js'];
 
 self.addEventListener('install', (event) => {
@@ -13,8 +13,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Network-first: always try to fetch the latest file so redeploys (new
+// config, new app code) take effect immediately. Only fall back to the
+// cached copy when there's no connection.
 self.addEventListener('fetch', (event) => {
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+  event.respondWith(
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(event.request, copy));
+        return res;
+      })
+      .catch(() => caches.match(event.request))
+  );
 });
 
 // Fires if the optional Web Push setup (see backend/README.md) is wired up.

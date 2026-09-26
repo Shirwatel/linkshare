@@ -1,4 +1,4 @@
-const CACHE = 'linkshare-v2';
+const CACHE = 'linkshare-v3';
 const SHELL = ['/', '/index.html', '/style.css', '/app.js', '/config.js', '/lib/supabase-bundle.js'];
 
 self.addEventListener('install', (event) => {
@@ -13,10 +13,15 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first: always try to fetch the latest file so redeploys (new
-// config, new app code) take effect immediately. Only fall back to the
-// cached copy when there's no connection.
+// Network-first, same-origin only: always try to fetch the latest file so
+// redeploys (new config, new app code) take effect immediately, falling
+// back to cache only when offline. Cross-origin requests (Supabase REST/
+// Realtime) are left completely alone — they're dynamic data, not app
+// shell, and the Cache API can't store non-GET requests anyway.
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin || event.request.method !== 'GET') return;
+
   event.respondWith(
     fetch(event.request)
       .then((res) => {

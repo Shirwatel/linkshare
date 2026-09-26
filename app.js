@@ -19,10 +19,27 @@ async function init() {
   const code = params.get('code');
   if (code) return connectWithCode(code, true);
 
+  // A home-screen shortcut launches with ?pid=<uuid> baked in (see
+  // updateManifestForInstall below) so it reconnects even on phones where
+  // the installed app's storage isn't shared with the regular browser tab.
+  const pid = params.get('pid');
+  if (pid) return restorePairingId(pid);
+
   const stored = localStorage.getItem(PAIRING_ID_KEY);
   if (stored) return enterFeed(stored);
 
   showView(pairView);
+}
+
+async function restorePairingId(pid) {
+  showView(connectingView);
+  const { data, error } = await supabase.from('pairings').select('id').eq('id', pid).maybeSingle();
+  if (error || !data) {
+    pairError.textContent = "This shortcut's connection isn't valid anymore \u2014 open the extension and scan a new QR code.";
+    return showView(pairView);
+  }
+  localStorage.setItem(PAIRING_ID_KEY, data.id);
+  enterFeed(data.id);
 }
 
 function showView(view) {
@@ -80,10 +97,28 @@ async function enterFeed(id) {
   pairingId = id;
   statusDot.classList.add('connected');
   showView(feedView);
+  updateManifestForInstall(id);
   await loadFeed();
   subscribeRealtime();
   maybeShowInstallBanner();
   maybeRequestNotifications();
+}
+
+// Rewrites the install manifest's start_url to include this pairing's id,
+// so the resulting home-screen shortcut is self-contained and reconnects
+// on launch even if the phone doesn't share storage between the browser
+// tab and the installed app.
+async function updateManifestForInstall(id) {
+  try {
+    const res = await fetch('manifest.json');
+    const manifest = await res.json();
+    manifest.start_url = `/index.html?pid=${id}`;
+    const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const link = document.querySelector('link[rel="manifest"]');
+    if (link) link.href = URL.createObjectURL(blob);
+  } catch (err) {
+    console.error('Link Share: could not personalize install manifest', err);
+  }
 }
 
 async function loadFeed() {

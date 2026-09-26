@@ -15,12 +15,12 @@ init();
 async function init() {
   registerServiceWorker();
 
-  const stored = localStorage.getItem(PAIRING_ID_KEY);
-  if (stored) return enterFeed(stored);
-
   const params = new URLSearchParams(location.search);
   const code = params.get('code');
   if (code) return connectWithCode(code, true);
+
+  const stored = localStorage.getItem(PAIRING_ID_KEY);
+  if (stored) return enterFeed(stored);
 
   showView(pairView);
 }

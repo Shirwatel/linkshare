@@ -104,6 +104,18 @@ html, body {
   padding: 0 2px;
 }
 
+.plan-banner {
+  background: rgba(139, 124, 246, 0.14);
+  border: 1px solid rgba(139, 124, 246, 0.35);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+.plan-banner.hidden { display: none; }
+
 .feed-list {
   list-style: none;
   margin: 0 0 16px;

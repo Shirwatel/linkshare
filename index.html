@@ -25,6 +25,11 @@
           <button id="connectBtn" class="primary-btn">Connect</button>
         </div>
         <p class="hint" id="pairError"></p>
+        <button id="showRestoreBtn" class="link-btn" style="margin-top: 4px;">Restore a previous connection</button>
+        <div id="restoreRow" class="code-input-row hidden" style="margin-top: 10px;">
+          <input id="restoreCodeInput" type="text" placeholder="Paste recovery code&hellip;" />
+          <button id="restoreConnectBtn" class="primary-btn">Restore</button>
+        </div>
       </div>
     </section>
 
@@ -44,6 +49,7 @@
 
     <!-- Feed -->
     <section id="feedView" class="view hidden">
+      <div id="planBanner" class="plan-banner hidden"></div>
       <ul id="feedList" class="feed-list"></ul>
 
       <div class="composer">

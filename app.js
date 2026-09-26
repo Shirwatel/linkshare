@@ -33,13 +33,13 @@ async function init() {
 
 async function restorePairingId(pid) {
   showView(connectingView);
-  const { data, error } = await supabase.from('pairings').select('id').eq('id', pid).maybeSingle();
-  if (error || !data) {
+  const { data: exists, error } = await supabase.rpc('pairing_exists', { p_id: pid });
+  if (error || !exists) {
     pairError.textContent = "This shortcut's connection isn't valid anymore \u2014 open the extension and scan a new QR code.";
     return showView(pairView);
   }
-  localStorage.setItem(PAIRING_ID_KEY, data.id);
-  enterFeed(data.id);
+  localStorage.setItem(PAIRING_ID_KEY, pid);
+  enterFeed(pid);
 }
 
 function showView(view) {
@@ -53,34 +53,40 @@ async function connectWithCode(code, fromQr) {
   showView(fromQr ? connectingView : pairView);
   pairError.textContent = '';
 
-  const { data, error } = await supabase
-    .from('pairings')
-    .select('id, code_expires_at, phone_connected')
-    .eq('pairing_code', code)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('find_pairing_by_code', { p_code: code });
+  const row = Array.isArray(data) ? data[0] : data;
 
   if (error) {
     pairError.textContent = `Couldn't reach the server: ${error.message || JSON.stringify(error)}`;
     console.error('Link Share connect error:', error);
     return showView(pairView);
   }
-  if (!data) {
+  if (!row) {
     pairError.textContent = 'No pairing found for that code. Double-check the extension and try again.';
     return showView(pairView);
   }
-  if (new Date(data.code_expires_at) < new Date()) {
+  if (new Date(row.code_expires_at) < new Date()) {
     pairError.textContent = 'That code expired \u2014 open the extension for a new one.';
     return showView(pairView);
   }
 
-  await supabase.from('pairings').update({ phone_connected: true }).eq('id', data.id);
-  localStorage.setItem(PAIRING_ID_KEY, data.id);
-  enterFeed(data.id);
+  await supabase.rpc('mark_phone_connected', { p_id: row.id });
+  localStorage.setItem(PAIRING_ID_KEY, row.id);
+  enterFeed(row.id);
 }
 
 document.getElementById('connectBtn').addEventListener('click', () => {
   const code = document.getElementById('codeInput').value.trim();
   if (code.length === 6) connectWithCode(code, false);
+});
+
+document.getElementById('showRestoreBtn').addEventListener('click', () => {
+  document.getElementById('restoreRow').classList.toggle('hidden');
+});
+
+document.getElementById('restoreConnectBtn').addEventListener('click', () => {
+  const code = document.getElementById('restoreCodeInput').value.trim();
+  if (code) restorePairingId(code);
 });
 
 document.getElementById('unpairBtn').addEventListener('click', () => {
@@ -102,6 +108,20 @@ async function enterFeed(id) {
   subscribeRealtime();
   maybeShowInstallBanner();
   maybeRequestNotifications();
+  showPlanBanner(id);
+}
+
+async function showPlanBanner(id) {
+  const banner = document.getElementById('planBanner');
+  const { data, error } = await supabase.rpc('get_pairing_meta', { p_id: id });
+  const meta = Array.isArray(data) ? data[0] : data;
+  if (error || !meta) return banner.classList.add('hidden');
+  if (meta.plan === 'free' && meta.item_count >= 10) {
+    banner.textContent = 'Free plan: 10/10 items \u2014 sending more replaces the oldest. Pro (unlimited history) is coming soon.';
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
 }
 
 // Rewrites the install manifest's start_url to include this pairing's id,
@@ -200,6 +220,7 @@ async function sendFromPhone() {
   const type = /^https?:\/\//i.test(text) ? 'link' : 'text';
   await supabase.from('items').insert({ pairing_id: pairingId, type, content: text, sender: 'phone' });
   input.value = '';
+  showPlanBanner(pairingId);
 }
 
 // ---------- install prompt ----------
